@@ -1,28 +1,24 @@
 use opencv::{
     core,
     prelude::*,
-    videoio::{CAP_PROP_FPS, 
-        CAP_PROP_FRAME_HEIGHT, 
-        CAP_PROP_FRAME_WIDTH, 
+    videoio::{
         VideoCapture, 
-        VideoCaptureTrait},
-};
-use std::{
-    sync::{Arc, Mutex},
-    thread,
+        VideoCaptureTrait, 
+        CAP_PROP_FPS, 
+        CAP_PROP_FRAME_HEIGHT, 
+        CAP_PROP_FRAME_WIDTH,
+    },
 };
 
 struct WebcamStream {
     stream_id: i32,
-    vcap: Arc<Mutex<VideoCapture>>,
+    vcap: VideoCapture,
     grabbed: bool,
-    frame: Arc<Mutex<Mat>>,
-    stopped: Arc<Mutex<bool>>,
-    t: thread::JoinHandle<()>,
+    frame: Mat,
 }
 
 impl WebcamStream {
-    fn new(stream_id: i32) -> Self {
+    fn new(stream_id: i32) -> WebcamStream {
         let mut vcap = VideoCapture::new(stream_id, 0).unwrap();
         vcap.set(CAP_PROP_FRAME_WIDTH, 640.0).unwrap();
         vcap.set(CAP_PROP_FRAME_HEIGHT, 480.0).unwrap();
@@ -37,48 +33,20 @@ impl WebcamStream {
         let frame = Mat::default().unwrap();
         let grabbed = vcap.read(&mut frame).unwrap();
 
-        let stopped = Arc::new(Mutex::new(true));
-        let vcap = Arc::new(Mutex::new(vcap));
-        let frame = Arc::new(Mutex::new(frame));
-
-        let stopped_clone = Arc::clone(&stopped);
-        let vcap_clone = Arc::clone(&vcap);
-        let frame_clone = Arc::clone(&frame);
-        let t = thread::spawn(move || Self::update(stopped_clone, vcap_clone, frame_clone));
-
-        Self {
+        WebcamStream {
             stream_id,
             vcap,
             grabbed,
             frame,
-            stopped,
-            t,
         }
     }
 
-    fn start(&mut self) {
-        *self.stopped.lock().unwrap() = false;
-    }
-
-    fn update(stopped: Arc<Mutex<bool>>, vcap: Arc<Mutex<VideoCapture>>, frame: Arc<Mutex<Mat>>) {
-        loop {
-            if *stopped.lock().unwrap() {
-                break;
-            }
-            if !vcap.lock().unwrap().read(&mut frame.lock().unwrap()).unwrap() {
-                println!("[Exiting] No more frames to read");
-                *stopped.lock().unwrap() = true;
-                break;
-            }
+    fn read(&mut self) -> Mat {
+        if !self.vcap.read(&mut self.frame).unwrap() {
+            println!("[Exiting] No more frames to read");
+            self.vcap.release().unwrap();
+            std::process::exit(0);
         }
-        vcap.lock().unwrap().release().unwrap();
-    }
-
-    fn read(&self) -> Mat {
-        self.frame.lock().unwrap().clone().unwrap()
-    }
-
-    fn stop(&mut self) {
-        *self.stopped.lock().unwrap() = true;
+        self.frame.clone().unwrap()
     }
 }

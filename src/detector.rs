@@ -1,10 +1,11 @@
-mod shooting_parameters;
+mod knn_tracker;
+mod parameters_processing;
+mod results;
 
-use opencv::{
-    prelude::*,
-    videoio::{VideoWriter, VideoWriter_fourcc},
-};
-use shooting_parameters::Parameter;
+use knn_tracker::KNN;
+use opencv::{core, imgproc as cv2, prelude::*, video};
+use parameters_processing::Parameter;
+use results::Result;
 
 struct Detector {
     open_flag: bool,
@@ -54,5 +55,122 @@ impl Detector {
     }
 
     //追踪激光点
-    
+    fn catch_center(&mut self, frame: &core::Mat) -> Result {
+        match self.open_flag {
+            true => {
+                self.frame_count += 1;
+                let knn = KNN::new();
+                let cents = knn.apply(frame);
+                self.det_flag = cents.iter().any(|c| cv2::contour_area(c) > 10.0);
+                self.center_list = cents
+                    .iter()
+                    .filter(|c| cv2::contour_area(c) > 10.0)
+                    .filter_map(|c| {
+                        let m = cv2::moments(c, false);
+                        match m.m00 {
+                            0.0 => {
+                                self.det_flag = false;
+                                None
+                            }
+                            _ => {
+                                let x = (m.m10 / m.m00) as i32;
+                                let y = (m.m01 / m.m00) as i32;
+                                Some((x, y))
+                            }
+                        }
+                    })
+                    .collect();
+                match self.center_list.last() {
+                    Some(&(x, y)) => self.center = [x, y],
+                    None => (),
+                }
+            }
+            false => (),
+        }
+        match self.det_flag {
+            true => {
+                // 重置坐标
+                self.det_flag = false;
+                // 储存中心坐标
+                self.aim_x_list.append(self.center[0]);
+                self.aim_y_list.append(self.center[1]);
+                self.shoot_x_list.append(self.center[0]);
+                self.shoot_y_list.append(self.center[1]);
+                self.center_x = self.center[0];
+                self.center_y = self.center[1];
+                // 清空列表
+                self.center.clear();
+            }
+            false => (),
+        }
+    }
+
+    // 更新瞄准参数
+    fn update(&mut self, flag: bool) -> tuple {
+        match flag {
+            // 更新射击参数
+            ture => {
+                let message = Result {
+                    aim_ring: self.score.aim_ring(self.aim_x_list, self.aim_y_list),
+                    shoot_ring: self.score.shoot_ring(self.center_x, self.center_y),
+                    shake: self.score.shake(self.aim_x_list, self.aim_y_list),
+                    shake_v: self.score.shake_v(self.aim_x_list, self.aim_y_list),
+                    shoot_shake: self.score.shoot_shake(
+                        self.shoot_x_list,
+                        self.shoot_y_list,
+                        self.center_x,
+                        self.center_y,
+                    ),
+                    shoot_shake_v: self.score.shoot_shake_v(
+                        self.shoot_x_list,
+                        self.shoot_y_list,
+                        self.center_x,
+                        self.center_y,
+                    ),
+                    center_x: self.center_x,
+                    center_y: self.center_y,
+                };
+                self.shoot_x_list.clear();
+                self.shoot_y_list.clear();
+                match self.frame_count {
+                    0..=34 => (),
+                    _ => {
+                        self.aim_x_list.clear();
+                        self.aim_y_list.clear();
+                        self.frame_count = 0
+                    }
+                };
+                match self.shoot_x_list.len() {
+                    0..=100 => (),
+                    _ => {
+                        self.shoot_x_list.clear();
+                        self.shoot_y_list.clear();
+                    }
+                };
+                message
+            }
+            false => {
+                let message = Result {
+                    aim_ring: self.score.aim_ring(self.aim_x_list, self.aim_y_list),
+                    shoot_ring: self.score.shoot_ring(self.center_x, self.center_y),
+                    shake: self.score.shake(self.aim_x_list, self.aim_y_list),
+                    shake_v: self.score.shake_v(self.aim_x_list, self.aim_y_list),
+                    shoot_shake: self.score.shoot_shake(
+                        self.shoot_x_list,
+                        self.shoot_y_list,
+                        self.center_x,
+                        self.center_y,
+                    ),
+                    shoot_shake_v: self.score.shoot_shake_v(
+                        self.shoot_x_list,
+                        self.shoot_y_list,
+                        self.center_x,
+                        self.center_y,
+                    ),
+                    center_x: self.center_x,
+                    center_y: self.center_y,
+                };
+            }
+        };
+    }
 }
