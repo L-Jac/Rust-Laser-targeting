@@ -21,12 +21,6 @@ struct Detector {
     aim_y_list: Vec<i32>,
     shoot_x_list: Vec<i32>,
     shoot_y_list: Vec<i32>,
-    aim_ring: i32,
-    shoot_ring: i32,
-    shake: i32,
-    shake_v: i32,
-    shoot_shake: i32,
-    shoot_shake_v: i32,
 }
 
 impl Detector {
@@ -45,17 +39,11 @@ impl Detector {
             aim_y_list: Vec![],
             shoot_x_list: Vec![],
             shoot_y_list: Vec![],
-            aim_ring: 0,
-            shoot_ring: 0,
-            shake: 0,
-            shake_v: 0,
-            shoot_shake: 0,
-            shoot_shake_v: 0,
         }
     }
 
     //追踪激光点
-    fn catch_center(&mut self, frame: &core::Mat) -> Result {
+    fn catch_center(&mut self, frame: &core::Mat) -> None {
         match self.open_flag {
             true => {
                 self.frame_count += 1;
@@ -105,8 +93,28 @@ impl Detector {
         }
     }
 
-    // 更新瞄准参数
-    fn update(&mut self, flag: bool) -> tuple {
+    // list_check
+    fn list_check(&mut self) -> None {
+        match self.frame_count {
+            0..=34 => (),
+            _ => {
+                self.aim_x_list.clear();
+                self.aim_y_list.clear();
+                self.frame_count = 0
+            }
+        };
+        match self.shoot_x_list.len() {
+            0..=100 => (),
+            _ => {
+                self.shoot_x_list.clear();
+                self.shoot_y_list.clear();
+            }
+        };
+    }
+
+    // 更新相关参数
+    fn update(&mut self, flag: bool, frame: &core::Mat) -> Result {
+        self.catch_center(frame);
         match flag {
             // 更新射击参数
             ture => {
@@ -132,44 +140,22 @@ impl Detector {
                 };
                 self.shoot_x_list.clear();
                 self.shoot_y_list.clear();
-                match self.frame_count {
-                    0..=34 => (),
-                    _ => {
-                        self.aim_x_list.clear();
-                        self.aim_y_list.clear();
-                        self.frame_count = 0
-                    }
-                };
-                match self.shoot_x_list.len() {
-                    0..=100 => (),
-                    _ => {
-                        self.shoot_x_list.clear();
-                        self.shoot_y_list.clear();
-                    }
-                };
+                self.list_check();
                 message
             }
             false => {
                 let message = Result {
                     aim_ring: self.score.aim_ring(self.aim_x_list, self.aim_y_list),
-                    shoot_ring: self.score.shoot_ring(self.center_x, self.center_y),
+                    shoot_ring: 0,
                     shake: self.score.shake(self.aim_x_list, self.aim_y_list),
                     shake_v: self.score.shake_v(self.aim_x_list, self.aim_y_list),
-                    shoot_shake: self.score.shoot_shake(
-                        self.shoot_x_list,
-                        self.shoot_y_list,
-                        self.center_x,
-                        self.center_y,
-                    ),
-                    shoot_shake_v: self.score.shoot_shake_v(
-                        self.shoot_x_list,
-                        self.shoot_y_list,
-                        self.center_x,
-                        self.center_y,
-                    ),
+                    shoot_shake: 0,
+                    shoot_shake_v: 0,
                     center_x: self.center_x,
                     center_y: self.center_y,
                 };
+                self.list_check();
+                message
             }
         };
     }
