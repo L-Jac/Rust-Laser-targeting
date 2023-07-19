@@ -1,11 +1,9 @@
 mod knn_tracker;
 mod parameters_processing;
-mod results;
 
 use knn_tracker::KNN;
-use opencv::{core, imgproc as cv2, prelude::*, video};
+use opencv::{core, imgproc as cv2, prelude::*};
 use parameters_processing::Parameter;
-use results::Result;
 
 struct Detector {
     open_flag: bool,
@@ -21,6 +19,18 @@ struct Detector {
     aim_y_list: Vec<i32>,
     shoot_x_list: Vec<i32>,
     shoot_y_list: Vec<i32>,
+}
+
+// 储存射击参数
+struct Result {
+    aim_ring: i32,
+    shoot_ring: i32,
+    shake: i32,
+    shake_v: i32,
+    shoot_shake: i32,
+    shoot_shake_v: i32,
+    center_x: i32,
+    center_y: i32,
 }
 
 impl Detector {
@@ -80,10 +90,10 @@ impl Detector {
                 // 重置坐标
                 self.det_flag = false;
                 // 储存中心坐标
-                self.aim_x_list.append(self.center[0]);
-                self.aim_y_list.append(self.center[1]);
-                self.shoot_x_list.append(self.center[0]);
-                self.shoot_y_list.append(self.center[1]);
+                self.aim_x_list.push(self.center[0]);
+                self.aim_y_list.push(self.center[1]);
+                self.shoot_x_list.push(self.center[0]);
+                self.shoot_y_list.push(self.center[1]);
                 self.center_x = self.center[0];
                 self.center_y = self.center[1];
                 // 清空列表
