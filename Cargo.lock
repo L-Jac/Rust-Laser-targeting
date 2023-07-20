@@ -187,6 +187,7 @@ dependencies = [
  "chrono",
  "ndarray",
  "opencv",
+ "serial2",
  "serialport",
 ]
 
@@ -424,6 +425,17 @@ name = "semver"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0293b4b29daaf487284529cc2f5675b8e57c61f70167ba415a463651fd6a918"
+
+[[package]]
+name = "serial2"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "072775cc5125115d408620e6925784edecf151e71e20b7137452e64ee7644df0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "serialport"

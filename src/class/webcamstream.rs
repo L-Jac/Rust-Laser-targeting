@@ -48,19 +48,19 @@ impl WebcamStream {
     }
 
     // 读取一帧
-    fn update_frame(&mut self) -> None {
+    fn update_frame(&mut self) -> Mat {
         match videocapture.read(&mut self.frame)? {
-            true => (),
+            true => self.frame,
             _ => {
                 self.workstatue = false;
                 println!("[Exiting]: 读取帧时出错");
-                break;
+                std::process::exit(0);
             }
         };
     }
 
     // 停止
-    fn stop(&mut self) -> None {
+    fn stop(&mut self) {
         self.workstatue = false;
     }
 }

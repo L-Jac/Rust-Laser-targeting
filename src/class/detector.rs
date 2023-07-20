@@ -53,7 +53,7 @@ impl Detector {
     }
 
     //追踪激光点
-    fn catch_center(&mut self, frame: &core::Mat) -> None {
+    fn catch_center(&mut self, frame: &core::Mat) {
         match self.open_flag {
             true => {
                 self.frame_count += 1;
@@ -104,7 +104,7 @@ impl Detector {
     }
 
     // list_check
-    fn list_check(&mut self) -> None {
+    fn list_check(&mut self) {
         match self.frame_count {
             0..=34 => (),
             _ => {
