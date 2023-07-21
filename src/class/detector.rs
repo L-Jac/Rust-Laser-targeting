@@ -1,11 +1,8 @@
-mod knn_tracker;
-mod parameters_processing;
+use super::knn_tracker::KNN;
+use super::parameters_processing::Parameter;
+use opencv::{core, imgproc as cv2};
 
-use knn_tracker::KNN;
-use opencv::{core, imgproc as cv2, prelude::*};
-use parameters_processing::Parameter;
-
-struct Detector {
+pub struct Detector {
     open_flag: bool,
     update_flag: bool,
     det_flag: bool,
@@ -22,7 +19,7 @@ struct Detector {
 }
 
 // 储存射击参数
-struct Result {
+struct ShootingResult {
     aim_ring: i32,
     shoot_ring: i32,
     shake: i32,
@@ -39,16 +36,16 @@ impl Detector {
             open_flag,
             update_flag: false,
             det_flag: false,
-            center_list: Vec![],
-            center: [],
+            center_list: vec![],
+            center: [0, 0],
             center_x: 0,
             center_y: 0,
             frame_count: 0,
             parameter: Parameter::new(),
-            aim_x_list: Vec![],
-            aim_y_list: Vec![],
-            shoot_x_list: Vec![],
-            shoot_y_list: Vec![],
+            aim_x_list: vec![],
+            aim_y_list: vec![],
+            shoot_x_list: vec![],
+            shoot_y_list: vec![],
         }
     }
 
@@ -57,16 +54,18 @@ impl Detector {
         match self.open_flag {
             true => {
                 self.frame_count += 1;
-                let knn = KNN::new();
-                let cents = knn.apply(frame);
-                self.det_flag = cents.iter().any(|c| cv2::contour_area(c) > 10.0);
+                let mut knn = KNN::new().unwrap();
+                let cents = knn.program(frame);
+                self.det_flag = cents
+                    .iter()
+                    .any(|c| cv2::contour_area(c, false).unwrap() > 10.0);
                 self.center_list = cents
                     .iter()
-                    .filter(|c| cv2::contour_area(c) > 10.0)
+                    .filter(|c| cv2::contour_area(c, false).unwrap() > 10.0)
                     .filter_map(|c| {
-                        let m = cv2::moments(c, false);
+                        let m = cv2::moments(c, false).unwrap();
                         match m.m00 {
-                            0.0 => {
+                            x if x == 0.0 => {
                                 self.det_flag = false;
                                 None
                             }
@@ -97,7 +96,7 @@ impl Detector {
                 self.center_x = self.center[0];
                 self.center_y = self.center[1];
                 // 清空列表
-                self.center.clear();
+                self.center.fill(0);
             }
             false => (),
         }
@@ -123,25 +122,25 @@ impl Detector {
     }
 
     // 更新相关参数
-    fn update(&mut self, flag: bool, frame: &core::Mat) -> Result {
+    fn update(&mut self, flag: bool, frame: &core::Mat) -> ShootingResult {
         self.catch_center(frame);
         match flag {
             // 更新射击参数
-            ture => {
-                let message = Result {
-                    aim_ring: self.score.aim_ring(self.aim_x_list, self.aim_y_list),
-                    shoot_ring: self.score.shoot_ring(self.center_x, self.center_y),
-                    shake: self.score.shake(self.aim_x_list, self.aim_y_list),
-                    shake_v: self.score.shake_v(self.aim_x_list, self.aim_y_list),
-                    shoot_shake: self.score.shoot_shake(
-                        self.shoot_x_list,
-                        self.shoot_y_list,
+            true => {
+                let message = ShootingResult {
+                    aim_ring: self.parameter.aim_ring(&self.aim_x_list, &self.aim_y_list),
+                    shoot_ring: self.parameter.shoot_ring(self.center_x, self.center_y),
+                    shake: self.parameter.shake(&self.aim_x_list, &self.aim_y_list),
+                    shake_v: self.parameter.shake_v(&self.aim_x_list, &self.aim_y_list),
+                    shoot_shake: self.parameter.shoot_shake(
+                        &self.shoot_x_list,
+                        &self.shoot_y_list,
                         self.center_x,
                         self.center_y,
                     ),
-                    shoot_shake_v: self.score.shoot_shake_v(
-                        self.shoot_x_list,
-                        self.shoot_y_list,
+                    shoot_shake_v: self.parameter.shoot_shake_v(
+                        &self.shoot_x_list,
+                        &self.shoot_y_list,
                         self.center_x,
                         self.center_y,
                     ),
@@ -151,21 +150,21 @@ impl Detector {
                 self.shoot_x_list.clear();
                 self.shoot_y_list.clear();
                 self.list_check();
-                message
+                return message;
             }
             false => {
-                let message = Result {
-                    aim_ring: self.score.aim_ring(self.aim_x_list, self.aim_y_list),
+                let message = ShootingResult {
+                    aim_ring: self.parameter.aim_ring(&self.aim_x_list, &self.aim_y_list),
                     shoot_ring: 0,
-                    shake: self.score.shake(self.aim_x_list, self.aim_y_list),
-                    shake_v: self.score.shake_v(self.aim_x_list, self.aim_y_list),
+                    shake: self.parameter.shake(&self.aim_x_list, &self.aim_y_list),
+                    shake_v: self.parameter.shake_v(&self.aim_x_list, &self.aim_y_list),
                     shoot_shake: 0,
                     shoot_shake_v: 0,
                     center_x: self.center_x,
                     center_y: self.center_y,
                 };
                 self.list_check();
-                message
+                return message;
             }
         };
     }
