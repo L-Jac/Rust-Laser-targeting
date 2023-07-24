@@ -3,7 +3,7 @@ use super::parameters_processing::Parameter;
 use opencv::{core, imgproc as cv2};
 
 pub struct Detector {
-    open_flag: bool,
+    pub open_flag: bool,
     update_flag: bool,
     det_flag: bool,
     center_list: Vec<(i32, i32)>,
@@ -19,19 +19,19 @@ pub struct Detector {
 }
 
 // 储存射击参数
-struct ShootingResult {
-    aim_ring: i32,
-    shoot_ring: i32,
-    shake: i32,
-    shake_v: i32,
-    shoot_shake: i32,
-    shoot_shake_v: i32,
-    center_x: i32,
-    center_y: i32,
+pub struct ShootingResult {
+    pub aim_ring: u8,
+    pub shoot_ring: u8,
+    pub shake: u8,
+    pub shake_v: u8,
+    pub shoot_shake: u8,
+    pub shoot_shake_v: u8,
+    pub center_x: u8,
+    pub center_y: u8,
 }
 
 impl Detector {
-    fn new(open_flag: bool) -> Detector {
+    pub fn new(open_flag: bool) -> Detector {
         Detector {
             open_flag,
             update_flag: false,
@@ -144,8 +144,8 @@ impl Detector {
                         self.center_x,
                         self.center_y,
                     ),
-                    center_x: self.center_x,
-                    center_y: self.center_y,
+                    center_x: self.center_x as u8,
+                    center_y: self.center_y as u8,
                 };
                 self.shoot_x_list.clear();
                 self.shoot_y_list.clear();
@@ -160,8 +160,8 @@ impl Detector {
                     shake_v: self.parameter.shake_v(&self.aim_x_list, &self.aim_y_list),
                     shoot_shake: 0,
                     shoot_shake_v: 0,
-                    center_x: self.center_x,
-                    center_y: self.center_y,
+                    center_x: self.center_x as u8,
+                    center_y: self.center_y as u8,
                 };
                 self.list_check();
                 return message;

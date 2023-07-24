@@ -8,7 +8,7 @@ pub struct WebcamStream {
 }
 
 impl WebcamStream {
-    fn new(stream_id: i32) -> Result<WebcamStream, Error> {
+    pub fn new(stream_id: i32) -> Result<WebcamStream, Error> {
         let mut videocapture = cv2::VideoCapture::new(stream_id, cv2::CAP_ANY)?;
         // ...
         let mut frame = Mat::default();
@@ -39,7 +39,7 @@ impl WebcamStream {
     }
 
     // 停止
-    fn stop(&mut self) {
+    pub fn stop(&mut self) {
         self.workstatue = false;
     }
 }

@@ -18,7 +18,7 @@ impl Parameter {
     }
 
     // 根据坐标算出环数
-    pub fn ring(&self, hit_x: i32, hit_y: i32) -> i32 {
+    pub fn ring(&self, hit_x: i32, hit_y: i32) -> u8 {
         let n = (((hit_x as f64 - self.center_x as f64).powi(2))
             + ((hit_y as f64 - self.center_y as f64).powi(2)))
         .sqrt();
@@ -31,7 +31,7 @@ impl Parameter {
             _ => return 0,
         };
         let r_d = (n - self.r[r_i as usize]) / 48.0;
-        return (10.0 * (r_i + (1.0 - r_d))) as i32;
+        return (10.0 * (r_i + (1.0 - r_d))) as u8;
     }
 
     //计算瞄准平均坐标
@@ -47,20 +47,20 @@ impl Parameter {
     }
 
     //计算瞄准环值
-    pub fn aim_ring(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> i32 {
+    pub fn aim_ring(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> u8 {
         let (aim_x, aim_y) = self.aim_axis(aim_x_list, aim_y_list);
         let ring_aim = self.ring(aim_x as i32, aim_y as i32);
         ring_aim
     }
 
     //计算击中环值
-    pub fn shoot_ring(&self, shoot_x: i32, shoot_y: i32) -> i32 {
+    pub fn shoot_ring(&self, shoot_x: i32, shoot_y: i32) -> u8 {
         let ring_shoot = self.ring(shoot_x, shoot_y);
         ring_shoot
     }
 
     // 计算持枪晃动
-    pub fn shake(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> i32 {
+    pub fn shake(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> u8 {
         let (aim_x, aim_y) = self.aim_axis(aim_x_list, aim_y_list);
         let shake = (aim_x_list
             .iter()
@@ -68,7 +68,7 @@ impl Parameter {
             .map(|(x, y)| (((*x as f64 - aim_x).powi(2)) + ((*y as f64 - aim_y).powi(2))).sqrt())
             .sum::<f64>()
             / aim_x_list.len() as f64
-            * self.k) as i32;
+            * self.k) as u8;
         match shake {
             0..=254 => shake,
             _ => 255,
@@ -76,7 +76,7 @@ impl Parameter {
     }
 
     // 计算晃动速率
-    pub fn shake_v(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> i32 {
+    pub fn shake_v(&self, aim_x_list: &Vec<i32>, aim_y_list: &Vec<i32>) -> u8 {
         let shake_v = (aim_x_list
             .iter()
             .zip(aim_y_list.iter())
@@ -86,7 +86,7 @@ impl Parameter {
                 .sqrt()
             })
             .sum::<f64>()
-            * self.k) as i32;
+            * self.k) as u8;
         match shake_v {
             0..=254 => shake_v,
             _ => 255,
@@ -100,7 +100,7 @@ impl Parameter {
         aim_y_list: &Vec<i32>,
         shoot_x: i32,
         shoot_y: i32,
-    ) -> i32 {
+    ) -> u8 {
         let shoot_shake = (aim_x_list
             .iter()
             .zip(aim_y_list.iter())
@@ -109,7 +109,7 @@ impl Parameter {
                     .sqrt()
             })
             .fold(f64::NEG_INFINITY, f64::max)
-            * self.k) as i32;
+            * self.k) as u8;
         match shoot_shake {
             0..=254 => shoot_shake,
             _ => 255,
@@ -123,7 +123,7 @@ impl Parameter {
         aim_y_list: &Vec<i32>,
         shoot_x: i32,
         shoot_y: i32,
-    ) -> i32 {
+    ) -> u8 {
         self.shoot_shake(aim_x_list, aim_y_list, shoot_x, shoot_y)
     }
 }
