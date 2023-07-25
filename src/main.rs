@@ -1,3 +1,5 @@
+use class::state_machine;
+
 mod class {
     pub mod correspondence;
     pub mod detector;
@@ -8,5 +10,8 @@ mod class {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let mut project = state_machine::StateMachine::new();
+    loop {
+        project.working();
+    }
 }

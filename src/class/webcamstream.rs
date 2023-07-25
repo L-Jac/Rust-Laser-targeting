@@ -1,9 +1,8 @@
 use opencv::{core, prelude::*, videoio as cv2, Error};
 
 pub struct WebcamStream {
-    stream_id: i32,
     videocapture: cv2::VideoCapture,
-    workstatue: bool,
+    pub workstatue: bool,
     frame: core::Mat,
 }
 
@@ -14,7 +13,6 @@ impl WebcamStream {
         let mut frame = Mat::default();
         match videocapture.read(&mut frame)? {
             true => Ok(WebcamStream {
-                stream_id,
                 videocapture,
                 workstatue: true,
                 frame,
@@ -27,7 +25,7 @@ impl WebcamStream {
     }
 
     // 读取一帧
-    fn update_frame(&mut self) -> Result<Mat, Error> {
+    pub fn update_frame(&mut self) -> Result<Mat, Error> {
         match self.videocapture.read(&mut self.frame)? {
             true => Ok(self.frame.clone()),
             _ => {

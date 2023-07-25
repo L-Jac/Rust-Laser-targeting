@@ -16,8 +16,8 @@ pub struct KNN {
 impl KNN {
     pub fn new() -> Result<KNN, Error> {
         let k_size = core::Size_::new(7, 7);
-        let mut cents = types::VectorOfVectorOfPoint::new();
-        let mut knn = video::create_background_subtractor_knn(500, 200.0, false)?;
+        let cents = types::VectorOfVectorOfPoint::new();
+        let knn = video::create_background_subtractor_knn(500, 200.0, false)?;
         let erode_kernel = cv2::get_structuring_element(
             cv2::MORPH_ELLIPSE,
             core::Size::new(7, 5),
@@ -73,7 +73,7 @@ impl KNN {
         cv2::dilate(
             &self.thresh2,
             &mut self.thresh1,
-            &self.erode_kernel,
+            &self.dilate_kernel,
             core::Point::new(-1, -1),
             1,
             core::BORDER_CONSTANT,

@@ -1,7 +1,6 @@
 use super::correspondence::DeviceCommunicator;
 use super::detector::Detector;
 use super::webcamstream::WebcamStream;
-use opencv::Error;
 
 enum Status {
     Idle,      // 空闲态
@@ -18,31 +17,23 @@ enum Events {
     SendPoint,  // 发击中坐标
 }
 
-struct StateMachine {
+pub struct StateMachine {
     connect: DeviceCommunicator,
     detect: Detector,
     status: Status,
     event: Events,
     webcamstream: WebcamStream,
-    target_start: f64,
-    target_end: f64,
-    gun_start: f64,
-    gun_end: f64,
     count: i32,
 }
 
 impl StateMachine {
-    fn new() -> StateMachine {
+    pub fn new() -> StateMachine {
         StateMachine {
             connect: DeviceCommunicator::new(9600),
             detect: Detector::new(false),
             status: Status::Idle,
             event: Events::Null,
             webcamstream: WebcamStream::new(10).unwrap(),
-            target_start: 0.0,
-            target_end: 0.0,
-            gun_start: 0.0,
-            gun_end: 0.0,
             count: 0,
         }
     }
@@ -55,6 +46,7 @@ impl StateMachine {
     fn fsm_status(&mut self) {
         loop {
             match self.status {
+                Status::Quit => break,
                 Status::Idle => {
                     match self.connect.target_enroll {
                         true => {
@@ -138,7 +130,6 @@ impl StateMachine {
                     }
                     break;
                 }
-                Status::Quit => break,
             }
         }
     }
@@ -153,18 +144,57 @@ impl StateMachine {
                     break;
                 }
                 Events::Quit => {
-                    self.connect.open_flag = false;
-                    self.connect.receive_quit_flag = false;
                     self.connect.receive_enroll_flag = false;
                     self.webcamstream.stop();
+                    self.status = Status::Quit;
                     self.event = Events::Null;
                     print!("相机关闭");
                     break;
                 }
-                Events::SendCurve => todo!(),
-                Events::SendPoint => todo!(),
+                Events::SendCurve => match self.webcamstream.workstatue {
+                    true => {
+                        let newframe = self.webcamstream.update_frame().unwrap();
+                        let shootresult = self.detect.update(false, &newframe);
+                        self.connect.hit(false, &shootresult);
+                        format!("击中环数:{}, 瞄准环数:{}, 持枪晃动量:{}, 持枪晃动速率:{}, 击发晃动:{}, 击发晃动速率:{}, 中心坐标X:{}, 中心坐标Y:{}",
+                            shootresult.shoot_ring,
+                            shootresult.aim_ring,
+                            shootresult.shake,
+                            shootresult.shake_v,
+                            shootresult.shoot_shake,
+                            shootresult.shoot_shake_v,
+                            shootresult.center_x,
+                            shootresult.center_y,
+                        );
+                    }
+                    false => (),
+                },
+                Events::SendPoint => match self.webcamstream.workstatue {
+                    true => {
+                        let newframe = self.webcamstream.update_frame().unwrap();
+                        let shootresult = self.detect.update(true, &newframe);
+                        self.connect.hit(true, &shootresult);
+                        format!("击中环数:{}, 瞄准环数:{}, 持枪晃动量:{}, 持枪晃动速率:{}, 击发晃动:{}, 击发晃动速率:{}, 中心坐标X:{}, 中心坐标Y:{}",
+                            shootresult.shoot_ring,
+                            shootresult.aim_ring,
+                            shootresult.shake,
+                            shootresult.shake_v,
+                            shootresult.shoot_shake,
+                            shootresult.shoot_shake_v,
+                            shootresult.center_x,
+                            shootresult.center_y,
+                        );
+                    }
+                    false => (),
+                },
                 Events::Null => break,
             }
         }
+    }
+
+    pub fn working(&mut self) {
+        self.get_action();
+        self.fsm_status();
+        self.fsm_events();
     }
 }

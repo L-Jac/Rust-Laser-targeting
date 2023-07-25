@@ -7,7 +7,6 @@ pub struct DeviceCommunicator {
     core_web: [u8; 15],
     data_gun: [u8; 12],
     data_web: [u8; 15],
-    count: i32,
     receive_flag: i32,
     pub target_enroll: bool,
     pub core_gun_flag: bool,
@@ -16,8 +15,6 @@ pub struct DeviceCommunicator {
     pub receive_data_flag: bool,
     pub receive_quit_flag: bool,
     confirm_set_flag: bool,
-    send_interval: bool,
-    pub open_flag: bool,
 }
 
 impl DeviceCommunicator {
@@ -35,7 +32,6 @@ impl DeviceCommunicator {
             ],
             data_gun: [0; 12],
             data_web: [0; 15],
-            count: 0,
 
             receive_flag: 0,
             target_enroll: false,
@@ -45,14 +41,12 @@ impl DeviceCommunicator {
             receive_data_flag: false,
             receive_quit_flag: false,
             confirm_set_flag: false,
-            send_interval: false,
-            open_flag: false,
         }
     }
 
     // 发信息
     fn send(&mut self, data_buffer: &[u8]) {
-        self.serial.write_all(data_buffer);
+        let _ = self.serial.write_all(data_buffer);
     }
 
     // 收信息
@@ -163,7 +157,7 @@ impl DeviceCommunicator {
     }
 
     // 传射击数据
-    fn hit(&mut self, flag: bool, message: ShootingResult) {
+    pub fn hit(&mut self, flag: bool, message: &ShootingResult) {
         match flag {
             true => self.core_web[3] = 0x01,
             false => self.core_web[3] = 0x00,

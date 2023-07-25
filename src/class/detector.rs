@@ -4,7 +4,6 @@ use opencv::{core, imgproc as cv2};
 
 pub struct Detector {
     pub open_flag: bool,
-    update_flag: bool,
     det_flag: bool,
     center_list: Vec<(i32, i32)>,
     center: [i32; 2],
@@ -34,7 +33,6 @@ impl Detector {
     pub fn new(open_flag: bool) -> Detector {
         Detector {
             open_flag,
-            update_flag: false,
             det_flag: false,
             center_list: vec![],
             center: [0, 0],
@@ -122,7 +120,7 @@ impl Detector {
     }
 
     // 更新相关参数
-    fn update(&mut self, flag: bool, frame: &core::Mat) -> ShootingResult {
+    pub fn update(&mut self, flag: bool, frame: &core::Mat) -> ShootingResult {
         self.catch_center(frame);
         match flag {
             // 更新射击参数
