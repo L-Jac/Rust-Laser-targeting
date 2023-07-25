@@ -33,7 +33,7 @@ impl StateMachine {
             detect: Detector::new(false),
             status: Status::Idle,
             event: Events::Null,
-            webcamstream: WebcamStream::new(10).unwrap(),
+            webcamstream: WebcamStream::new(1).unwrap(),
             count: 0,
         }
     }
