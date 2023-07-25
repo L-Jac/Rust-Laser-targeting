@@ -35,9 +35,4 @@ impl WebcamStream {
             }
         }
     }
-
-    // 停止
-    pub fn stop(&mut self) {
-        self.workstatue = false;
-    }
 }
